@@ -15,6 +15,10 @@
 
 #include "flex/engines/graph_db/database/graph_db.h"
 #include "flex/engines/graph_db/app/adhoc_app.h"
+#include "flex/engines/graph_db/app/builtin/count_vertices.h"
+#include "flex/engines/graph_db/app/builtin/k_hop_neighbors.h"
+#include "flex/engines/graph_db/app/builtin/pagerank.h"
+#include "flex/engines/graph_db/app/builtin/shortest_path_among_three.h"
 #include "flex/engines/graph_db/app/hqps_app.h"
 #include "flex/engines/graph_db/app/server_app.h"
 #include "flex/engines/graph_db/database/graph_db_session.h"
@@ -97,13 +101,13 @@ Result<bool> GraphDB::Open(const GraphDBConfig& config) {
     graph_.Open(data_dir, config.memory_level);
   } catch (std::exception& e) {
     LOG(ERROR) << "Exception: " << e.what();
-    return Result<bool>(StatusCode::InternalError,
+    return Result<bool>(StatusCode::INTERNAL_ERROR,
                         "Exception: " + std::string(e.what()), false);
   }
 
   if ((!create_empty_graph) && (!graph_.schema().Equals(schema))) {
     LOG(ERROR) << "Schema inconsistent..\n";
-    return Result<bool>(StatusCode::InternalError,
+    return Result<bool>(StatusCode::INTERNAL_ERROR,
                         "Schema of work directory is not compatible with the "
                         "graph schema",
                         false);
@@ -405,6 +409,15 @@ void GraphDB::initApps(
   }
   // Builtin apps
   app_factories_[0] = std::make_shared<ServerAppFactory>();
+  app_factories_[Schema::BUILTIN_COUNT_VERTICES_PLUGIN_ID] =
+      std::make_shared<CountVerticesFactory>();
+  app_factories_[Schema::BUILTIN_PAGERANK_PLUGIN_ID] =
+      std::make_shared<PageRankFactory>();
+  app_factories_[Schema::BUILTIN_K_DEGREE_NEIGHBORS_PLUGIN_ID] =
+      std::make_shared<KNeighborsFactory>();
+  app_factories_[Schema::BUILTIN_TVSP_PLUGIN_ID] =
+      std::make_shared<ShortestPathAmongThreeFactory>();
+
   app_factories_[Schema::HQPS_ADHOC_READ_PLUGIN_ID] =
       std::make_shared<HQPSAdhocReadAppFactory>();
   app_factories_[Schema::HQPS_ADHOC_WRITE_PLUGIN_ID] =
